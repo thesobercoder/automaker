@@ -38,6 +38,7 @@ import {
   GitBranch,
   TestTube,
   Settings2,
+  RefreshCw,
 } from "lucide-react";
 import { getElectronAPI } from "@/lib/electron";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -134,6 +135,8 @@ export function SettingsView() {
   } | null>(null);
   const [activeSection, setActiveSection] = useState("api-keys");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isCheckingClaudeCli, setIsCheckingClaudeCli] = useState(false);
+  const [isCheckingCodexCli, setIsCheckingCodexCli] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -338,6 +341,36 @@ export function SettingsView() {
       setTestingOpenaiConnection(false);
     }
   };
+
+  const handleRefreshClaudeCli = useCallback(async () => {
+    setIsCheckingClaudeCli(true);
+    try {
+      const api = getElectronAPI();
+      if (api?.checkClaudeCli) {
+        const status = await api.checkClaudeCli();
+        setClaudeCliStatus(status);
+      }
+    } catch (error) {
+      console.error("Failed to refresh Claude CLI status:", error);
+    } finally {
+      setIsCheckingClaudeCli(false);
+    }
+  }, []);
+
+  const handleRefreshCodexCli = useCallback(async () => {
+    setIsCheckingCodexCli(true);
+    try {
+      const api = getElectronAPI();
+      if (api?.checkCodexCli) {
+        const status = await api.checkCodexCli();
+        setCodexCliStatus(status);
+      }
+    } catch (error) {
+      console.error("Failed to refresh Codex CLI status:", error);
+    } finally {
+      setIsCheckingCodexCli(false);
+    }
+  }, []);
 
   const handleSave = () => {
     setApiKeys({
@@ -729,11 +762,27 @@ export function SettingsView() {
                 className="rounded-xl border border-border bg-card backdrop-blur-md overflow-hidden scroll-mt-6"
               >
                 <div className="p-6 border-b border-border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Terminal className="w-5 h-5 text-brand-500" />
-                    <h2 className="text-lg font-semibold text-foreground">
-                      Claude Code CLI
-                    </h2>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Terminal className="w-5 h-5 text-brand-500" />
+                      <h2 className="text-lg font-semibold text-foreground">
+                        Claude Code CLI
+                      </h2>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleRefreshClaudeCli}
+                      disabled={isCheckingClaudeCli}
+                      data-testid="refresh-claude-cli"
+                      title="Refresh Claude CLI detection"
+                    >
+                      <RefreshCw
+                        className={`w-4 h-4 ${
+                          isCheckingClaudeCli ? "animate-spin" : ""
+                        }`}
+                      />
+                    </Button>
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Claude Code CLI provides better performance for long-running
@@ -853,11 +902,27 @@ export function SettingsView() {
                 className="rounded-xl border border-border bg-card backdrop-blur-md overflow-hidden scroll-mt-6"
               >
                 <div className="p-6 border-b border-border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Terminal className="w-5 h-5 text-green-500" />
-                    <h2 className="text-lg font-semibold text-foreground">
-                      OpenAI Codex CLI
-                    </h2>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Terminal className="w-5 h-5 text-green-500" />
+                      <h2 className="text-lg font-semibold text-foreground">
+                        OpenAI Codex CLI
+                      </h2>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleRefreshCodexCli}
+                      disabled={isCheckingCodexCli}
+                      data-testid="refresh-codex-cli"
+                      title="Refresh Codex CLI detection"
+                    >
+                      <RefreshCw
+                        className={`w-4 h-4 ${
+                          isCheckingCodexCli ? "animate-spin" : ""
+                        }`}
+                      />
+                    </Button>
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Codex CLI enables GPT-5.1 Codex models for autonomous coding
