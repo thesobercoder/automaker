@@ -11,7 +11,11 @@ import * as os from "os";
 import * as fs from "fs";
 
 // Maximum scrollback buffer size (characters)
-const MAX_SCROLLBACK_SIZE = 100000; // ~100KB per terminal
+const MAX_SCROLLBACK_SIZE = 50000; // ~50KB per terminal
+
+// Throttle output to prevent overwhelming WebSocket under heavy load
+const OUTPUT_THROTTLE_MS = 16; // ~60fps max update rate
+const OUTPUT_BATCH_SIZE = 8192; // Max bytes to send per batch
 
 export interface TerminalSession {
   id: string;
@@ -20,6 +24,8 @@ export interface TerminalSession {
   createdAt: Date;
   shell: string;
   scrollbackBuffer: string; // Store recent output for replay on reconnect
+  outputBuffer: string; // Pending output to be flushed
+  flushTimeout: NodeJS.Timeout | null; // Throttle timer
 }
 
 export interface TerminalOptions {
@@ -205,11 +211,33 @@ export class TerminalService extends EventEmitter {
       createdAt: new Date(),
       shell,
       scrollbackBuffer: "",
+      outputBuffer: "",
+      flushTimeout: null,
     };
 
     this.sessions.set(id, session);
 
-    // Forward data events and store in scrollback buffer
+    // Flush buffered output to clients (throttled)
+    const flushOutput = () => {
+      if (session.outputBuffer.length === 0) return;
+
+      // Send in batches if buffer is large
+      let dataToSend = session.outputBuffer;
+      if (dataToSend.length > OUTPUT_BATCH_SIZE) {
+        dataToSend = session.outputBuffer.slice(0, OUTPUT_BATCH_SIZE);
+        session.outputBuffer = session.outputBuffer.slice(OUTPUT_BATCH_SIZE);
+        // Schedule another flush for remaining data
+        session.flushTimeout = setTimeout(flushOutput, OUTPUT_THROTTLE_MS);
+      } else {
+        session.outputBuffer = "";
+        session.flushTimeout = null;
+      }
+
+      this.dataCallbacks.forEach((cb) => cb(id, dataToSend));
+      this.emit("data", id, dataToSend);
+    };
+
+    // Forward data events with throttling
     ptyProcess.onData((data) => {
       // Append to scrollback buffer
       session.scrollbackBuffer += data;
@@ -218,8 +246,13 @@ export class TerminalService extends EventEmitter {
         session.scrollbackBuffer = session.scrollbackBuffer.slice(-MAX_SCROLLBACK_SIZE);
       }
 
-      this.dataCallbacks.forEach((cb) => cb(id, data));
-      this.emit("data", id, data);
+      // Buffer output for throttled delivery
+      session.outputBuffer += data;
+
+      // Schedule flush if not already scheduled
+      if (!session.flushTimeout) {
+        session.flushTimeout = setTimeout(flushOutput, OUTPUT_THROTTLE_MS);
+      }
     });
 
     // Handle exit
@@ -274,6 +307,11 @@ export class TerminalService extends EventEmitter {
       return false;
     }
     try {
+      // Clean up flush timeout
+      if (session.flushTimeout) {
+        clearTimeout(session.flushTimeout);
+        session.flushTimeout = null;
+      }
       session.pty.kill();
       this.sessions.delete(sessionId);
       console.log(`[Terminal] Session ${sessionId} killed`);
@@ -339,6 +377,10 @@ export class TerminalService extends EventEmitter {
     console.log(`[Terminal] Cleaning up ${this.sessions.size} sessions`);
     this.sessions.forEach((session, id) => {
       try {
+        // Clean up flush timeout
+        if (session.flushTimeout) {
+          clearTimeout(session.flushTimeout);
+        }
         session.pty.kill();
       } catch {
         // Ignore errors during cleanup
