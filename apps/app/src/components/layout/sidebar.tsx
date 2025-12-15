@@ -207,10 +207,11 @@ const BugReportButton = ({
     <button
       onClick={onClick}
       className={cn(
-        "titlebar-no-drag p-1.5 rounded-lg",
+        "titlebar-no-drag px-3 py-2.5 rounded-xl",
         "text-muted-foreground hover:text-foreground hover:bg-accent/80",
+        "border border-transparent hover:border-border/40",
         "transition-all duration-200 ease-out",
-        "hover:scale-105 active:scale-95",
+        "hover:scale-[1.02] active:scale-[0.97]",
         sidebarExpanded && "absolute right-3"
       )}
       title="Report Bug / Feature Request"
@@ -1439,7 +1440,7 @@ export function Sidebar() {
 
         {/* Project Actions - Moved above project selector */}
         {sidebarOpen && (
-          <div className="flex items-center gap-2.5 titlebar-no-drag px-3 mt-4">
+          <div className="flex items-center gap-2.5 titlebar-no-drag px-3 mt-5">
             <button
               onClick={() => setShowNewProjectModal(true)}
               className={cn(
@@ -1811,7 +1812,7 @@ export function Sidebar() {
         )}
 
         {/* Nav Items - Scrollable */}
-        <nav className={cn("flex-1 overflow-y-auto px-3 pb-2", sidebarOpen ? "mt-5" : "mt-1.5")}>
+        <nav className={cn("flex-1 overflow-y-auto px-3 pb-2", sidebarOpen ? "mt-5" : "mt1")}>
           {!currentProject && sidebarOpen ? (
             // Placeholder when no project is selected (only in expanded state)
             <div className="flex items-center justify-center h-full px-4">
