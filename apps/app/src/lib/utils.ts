@@ -25,3 +25,13 @@ export function getModelDisplayName(model: AgentModel | string): string {
   };
   return displayNames[model] || model;
 }
+
+/**
+ * Truncate a description string with ellipsis
+ */
+export function truncateDescription(description: string, maxLength = 50): string {
+  if (description.length <= maxLength) {
+    return description;
+  }
+  return `${description.slice(0, maxLength)}...`;
+}

@@ -1,0 +1,47 @@
+import { useMemo } from "react";
+import { useAppStore, defaultBackgroundSettings } from "@/store/app-store";
+
+interface UseBoardBackgroundProps {
+  currentProject: { path: string; id: string } | null;
+}
+
+export function useBoardBackground({ currentProject }: UseBoardBackgroundProps) {
+  const boardBackgroundByProject = useAppStore(
+    (state) => state.boardBackgroundByProject
+  );
+
+  // Get background settings for current project
+  const backgroundSettings = useMemo(() => {
+    return (
+      (currentProject && boardBackgroundByProject[currentProject.path]) ||
+      defaultBackgroundSettings
+    );
+  }, [currentProject, boardBackgroundByProject]);
+
+  // Build background image style if image exists
+  const backgroundImageStyle = useMemo(() => {
+    if (!backgroundSettings.imagePath || !currentProject) {
+      return {};
+    }
+
+    return {
+      backgroundImage: `url(${
+        process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3008"
+      }/api/fs/image?path=${encodeURIComponent(
+        backgroundSettings.imagePath
+      )}&projectPath=${encodeURIComponent(currentProject.path)}${
+        backgroundSettings.imageVersion
+          ? `&v=${backgroundSettings.imageVersion}`
+          : ""
+      })`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundRepeat: "no-repeat",
+    } as React.CSSProperties;
+  }, [backgroundSettings, currentProject]);
+
+  return {
+    backgroundSettings,
+    backgroundImageStyle,
+  };
+}

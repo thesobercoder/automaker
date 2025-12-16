@@ -46,3 +46,4 @@ export const THINKING_LEVELS: { id: ThinkingLevel; label: string }[] = [
   { id: "ultrathink", label: "Ultrathink" },
 ];
 
+
