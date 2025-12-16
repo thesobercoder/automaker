@@ -330,6 +330,49 @@ export const KanbanCard = memo(function KanbanCard({
         />
       )}
 
+      {/* Priority badge */}
+      {feature.priority && (
+        <TooltipProvider delayDuration={200}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                className={cn(
+                  "absolute px-2 py-1 text-sm font-bold rounded-md flex items-center justify-center z-10",
+                  "top-2 left-2 min-w-[36px]",
+                  feature.priority === 1 &&
+                    "bg-red-500/20 text-red-500 border-2 border-red-500/50",
+                  feature.priority === 2 &&
+                    "bg-yellow-500/20 text-yellow-500 border-2 border-yellow-500/50",
+                  feature.priority === 3 &&
+                    "bg-blue-500/20 text-blue-500 border-2 border-blue-500/50"
+                )}
+                data-testid={`priority-badge-${feature.id}`}
+              >
+                P{feature.priority}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="text-xs">
+              <p>
+                {feature.priority === 1
+                  ? "High Priority"
+                  : feature.priority === 2
+                    ? "Medium Priority"
+                    : "Low Priority"}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
+
+      {/* Category text next to priority badge */}
+      {feature.priority && (
+        <div className="absolute top-2 left-[54px] right-12 z-10 flex items-center h-[32px]">
+          <span className="text-[11px] text-muted-foreground/70 font-medium truncate">
+            {feature.category}
+          </span>
+        </div>
+      )}
+
       {/* Skip Tests (Manual) indicator badge */}
       {feature.skipTests && !feature.error && (
         <TooltipProvider delayDuration={200}>
@@ -338,7 +381,7 @@ export const KanbanCard = memo(function KanbanCard({
               <div
                 className={cn(
                   "absolute px-1.5 py-0.5 text-[10px] font-medium rounded-md flex items-center gap-1 z-10",
-                  "top-2 left-2",
+                  feature.priority ? "top-11 left-2" : "top-2 left-2",
                   "bg-[var(--status-warning-bg)] border border-[var(--status-warning)]/40 text-[var(--status-warning)]"
                 )}
                 data-testid={`skip-tests-badge-${feature.id}`}
@@ -361,7 +404,7 @@ export const KanbanCard = memo(function KanbanCard({
               <div
                 className={cn(
                   "absolute px-1.5 py-0.5 text-[10px] font-medium rounded-md flex items-center gap-1 z-10",
-                  "top-2 left-2",
+                  feature.priority ? "top-11 left-2" : "top-2 left-2",
                   "bg-[var(--status-error-bg)] border border-[var(--status-error)]/40 text-[var(--status-error)]"
                 )}
                 data-testid={`error-badge-${feature.id}`}
@@ -381,7 +424,11 @@ export const KanbanCard = memo(function KanbanCard({
         <div
           className={cn(
             "absolute px-1.5 py-0.5 text-[10px] font-medium rounded-md flex items-center gap-1 z-10",
-            feature.skipTests ? "top-8 left-2" : "top-2 left-2",
+            feature.priority
+              ? "top-11 left-2"
+              : feature.skipTests
+                ? "top-8 left-2"
+                : "top-2 left-2",
             "bg-[var(--status-success-bg)] border border-[var(--status-success)]/40 text-[var(--status-success)]",
             "animate-pulse"
           )}
@@ -401,9 +448,11 @@ export const KanbanCard = memo(function KanbanCard({
                 className={cn(
                   "absolute px-1.5 py-0.5 text-[10px] font-medium rounded-md flex items-center gap-1 z-10 cursor-default",
                   "bg-[var(--status-info-bg)] border border-[var(--status-info)]/40 text-[var(--status-info)]",
-                  feature.error || feature.skipTests || isJustFinished
-                    ? "top-8 left-2"
-                    : "top-2 left-2"
+                  feature.priority
+                    ? "top-11 left-2"
+                    : feature.error || feature.skipTests || isJustFinished
+                      ? "top-8 left-2"
+                      : "top-2 left-2"
                 )}
                 data-testid={`branch-badge-${feature.id}`}
               >
@@ -422,7 +471,10 @@ export const KanbanCard = memo(function KanbanCard({
       <CardHeader
         className={cn(
           "p-3 pb-2 block",
-          (feature.skipTests || feature.error || isJustFinished) && "pt-10",
+          feature.priority && "pt-12",
+          !feature.priority &&
+            (feature.skipTests || feature.error || isJustFinished) &&
+            "pt-10",
           hasWorktree &&
             (feature.skipTests || feature.error || isJustFinished) &&
             "pt-14"
@@ -613,9 +665,11 @@ export const KanbanCard = memo(function KanbanCard({
                 )}
               </button>
             )}
-            <CardDescription className="text-[11px] mt-1.5 truncate text-muted-foreground/70">
-              {feature.category}
-            </CardDescription>
+            {!feature.priority && (
+              <CardDescription className="text-[11px] mt-1.5 truncate text-muted-foreground/70">
+                {feature.category}
+              </CardDescription>
+            )}
           </div>
         </div>
       </CardHeader>

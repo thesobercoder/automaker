@@ -56,17 +56,19 @@ ${spec}
 Generate a prioritized list of implementable features. For each feature provide:
 
 1. **id**: A unique lowercase-hyphenated identifier
-2. **title**: Short descriptive title
-3. **description**: What this feature does (2-3 sentences)
-4. **priority**: 1 (high), 2 (medium), or 3 (low)
-5. **complexity**: "simple", "moderate", or "complex"
-6. **dependencies**: Array of feature IDs this depends on (can be empty)
+2. **category**: Functional category (e.g., "Core", "UI", "API", "Authentication", "Database")
+3. **title**: Short descriptive title
+4. **description**: What this feature does (2-3 sentences)
+5. **priority**: 1 (high), 2 (medium), or 3 (low)
+6. **complexity**: "simple", "moderate", or "complex"
+7. **dependencies**: Array of feature IDs this depends on (can be empty)
 
 Format as JSON:
 {
   "features": [
     {
       "id": "feature-id",
+      "category": "Feature Category",
       "title": "Feature Title",
       "description": "What it does",
       "priority": 1,

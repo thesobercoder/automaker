@@ -17,6 +17,8 @@ out/
 /.automaker/*
 /.automaker/
 
+/logs
+
 # Logs
 logs/
 *.log
@@ -51,7 +53,6 @@ Desktop.ini
 
 # Local settings (user-specific)
 *.local.json
-.claude/settings.local.json
 
 # Application state/backup
 backup.json

@@ -53,6 +53,7 @@ export async function parseAndCreateFeatures(
 
       const featureData = {
         id: feature.id,
+        category: feature.category || "Uncategorized",
         title: feature.title,
         description: feature.description,
         status: "backlog", // Features go to backlog - user must manually start them

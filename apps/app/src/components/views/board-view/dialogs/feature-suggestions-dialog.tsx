@@ -239,6 +239,7 @@ export function FeatureSuggestionsDialog({
         steps: s.steps,
         status: "backlog" as const,
         skipTests: true, // As specified, testing mode true
+        priority: s.priority, // Preserve priority from suggestion
       }));
 
       // Create each new feature using the features API

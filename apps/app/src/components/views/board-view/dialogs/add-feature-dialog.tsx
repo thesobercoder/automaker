@@ -35,6 +35,7 @@ import {
   ThinkingLevelSelector,
   ProfileQuickSelect,
   TestingTabContent,
+  PrioritySelector,
 } from "../shared";
 import {
   DropdownMenu,
@@ -55,6 +56,7 @@ interface AddFeatureDialogProps {
     skipTests: boolean;
     model: AgentModel;
     thinkingLevel: ThinkingLevel;
+    priority: number;
   }) => void;
   categorySuggestions: string[];
   defaultSkipTests: boolean;
@@ -82,6 +84,7 @@ export function AddFeatureDialog({
     skipTests: false,
     model: "opus" as AgentModel,
     thinkingLevel: "none" as ThinkingLevel,
+    priority: 2 as number, // Default to medium priority
   });
   const [newFeaturePreviewMap, setNewFeaturePreviewMap] =
     useState<ImagePreviewMap>(() => new Map());
@@ -124,6 +127,7 @@ export function AddFeatureDialog({
       skipTests: newFeature.skipTests,
       model: selectedModel,
       thinkingLevel: normalizedThinking,
+      priority: newFeature.priority,
     });
 
     // Reset form
@@ -135,6 +139,7 @@ export function AddFeatureDialog({
       imagePaths: [],
       skipTests: defaultSkipTests,
       model: "opus",
+      priority: 2,
       thinkingLevel: "none",
     });
     setNewFeaturePreviewMap(new Map());
@@ -316,6 +321,15 @@ export function AddFeatureDialog({
                 data-testid="feature-category-input"
               />
             </div>
+
+            {/* Priority Selector */}
+            <PrioritySelector
+              selectedPriority={newFeature.priority}
+              onPrioritySelect={(priority) =>
+                setNewFeature({ ...newFeature, priority })
+              }
+              testIdPrefix="priority"
+            />
           </TabsContent>
 
           {/* Model Tab */}

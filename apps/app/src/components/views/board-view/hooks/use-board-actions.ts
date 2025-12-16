@@ -66,6 +66,7 @@ export function useBoardActions({
       skipTests: boolean;
       model: AgentModel;
       thinkingLevel: ThinkingLevel;
+      priority: number;
     }) => {
       const newFeatureData = {
         ...featureData,
@@ -89,6 +90,7 @@ export function useBoardActions({
         model: AgentModel;
         thinkingLevel: ThinkingLevel;
         imagePaths: DescriptionImagePath[];
+        priority: number;
       }
     ) => {
       updateFeature(featureId, updates);

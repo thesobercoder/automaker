@@ -19,7 +19,7 @@ import {
   FeatureImagePath as DescriptionImagePath,
   ImagePreviewMap,
 } from "@/components/ui/description-image-dropzone";
-import { MessageSquare, Settings2, FlaskConical, Sparkles, ChevronDown } from "lucide-react";
+import { MessageSquare, Settings2, FlaskConical, Sparkles, ChevronDown, GitBranch } from "lucide-react";
 import { toast } from "sonner";
 import { getElectronAPI } from "@/lib/electron";
 import { modelSupportsThinking } from "@/lib/utils";
@@ -35,6 +35,7 @@ import {
   ThinkingLevelSelector,
   ProfileQuickSelect,
   TestingTabContent,
+  PrioritySelector,
 } from "../shared";
 import {
   DropdownMenu,
@@ -42,6 +43,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DependencyTreeDialog } from "./dependency-tree-dialog";
 
 interface EditFeatureDialogProps {
   feature: Feature | null;
@@ -56,12 +58,14 @@ interface EditFeatureDialogProps {
       model: AgentModel;
       thinkingLevel: ThinkingLevel;
       imagePaths: DescriptionImagePath[];
+      priority: number;
     }
   ) => void;
   categorySuggestions: string[];
   isMaximized: boolean;
   showProfilesOnly: boolean;
   aiProfiles: AIProfile[];
+  allFeatures: Feature[];
 }
 
 export function EditFeatureDialog({
@@ -72,6 +76,7 @@ export function EditFeatureDialog({
   isMaximized,
   showProfilesOnly,
   aiProfiles,
+  allFeatures,
 }: EditFeatureDialogProps) {
   const [editingFeature, setEditingFeature] = useState<Feature | null>(feature);
   const [editFeaturePreviewMap, setEditFeaturePreviewMap] =
@@ -79,6 +84,7 @@ export function EditFeatureDialog({
   const [showEditAdvancedOptions, setShowEditAdvancedOptions] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [enhancementMode, setEnhancementMode] = useState<'improve' | 'technical' | 'simplify' | 'acceptance'>('improve');
+  const [showDependencyTree, setShowDependencyTree] = useState(false);
 
   // Get enhancement model from store
   const { enhancementModel } = useAppStore();
@@ -107,6 +113,7 @@ export function EditFeatureDialog({
       model: selectedModel,
       thinkingLevel: normalizedThinking,
       imagePaths: editingFeature.imagePaths ?? [],
+      priority: editingFeature.priority ?? 2,
     };
 
     onUpdate(editingFeature.id, updates);
@@ -294,6 +301,18 @@ export function EditFeatureDialog({
                 data-testid="edit-feature-category"
               />
             </div>
+
+            {/* Priority Selector */}
+            <PrioritySelector
+              selectedPriority={editingFeature.priority ?? 2}
+              onPrioritySelect={(priority) =>
+                setEditingFeature({
+                  ...editingFeature,
+                  priority,
+                })
+              }
+              testIdPrefix="edit-priority"
+            />
           </TabsContent>
 
           {/* Model Tab */}
@@ -377,20 +396,37 @@ export function EditFeatureDialog({
             />
           </TabsContent>
         </Tabs>
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <HotkeyButton
-            onClick={handleUpdate}
-            hotkey={{ key: "Enter", cmdCtrl: true }}
-            hotkeyActive={!!editingFeature}
-            data-testid="confirm-edit-feature"
+        <DialogFooter className="sm:!justify-between">
+          <Button
+            variant="outline"
+            onClick={() => setShowDependencyTree(true)}
+            className="gap-2 h-10"
           >
-            Save Changes
-          </HotkeyButton>
+            <GitBranch className="w-4 h-4" />
+            View Dependency Tree
+          </Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={onClose}>
+              Cancel
+            </Button>
+            <HotkeyButton
+              onClick={handleUpdate}
+              hotkey={{ key: "Enter", cmdCtrl: true }}
+              hotkeyActive={!!editingFeature}
+              data-testid="confirm-edit-feature"
+            >
+              Save Changes
+            </HotkeyButton>
+          </div>
         </DialogFooter>
       </DialogContent>
+
+      <DependencyTreeDialog
+        open={showDependencyTree}
+        onClose={() => setShowDependencyTree(false)}
+        feature={editingFeature}
+        allFeatures={allFeatures}
+      />
     </Dialog>
   );
 }

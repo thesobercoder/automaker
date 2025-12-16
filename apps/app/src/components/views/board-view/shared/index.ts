@@ -3,3 +3,4 @@ export * from "./model-selector";
 export * from "./thinking-level-selector";
 export * from "./profile-quick-select";
 export * from "./testing-tab-content";
+export * from "./priority-selector";
