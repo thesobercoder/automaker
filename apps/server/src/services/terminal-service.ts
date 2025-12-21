@@ -13,6 +13,10 @@ import * as fs from "fs";
 // Maximum scrollback buffer size (characters)
 const MAX_SCROLLBACK_SIZE = 50000; // ~50KB per terminal
 
+// Session limit constants - shared with routes/settings.ts
+export const MIN_MAX_SESSIONS = 1;
+export const MAX_MAX_SESSIONS = 500;
+
 // Maximum number of concurrent terminal sessions
 // Can be overridden via TERMINAL_MAX_SESSIONS environment variable
 // Default set to 1000 - effectively unlimited for most use cases
@@ -200,7 +204,7 @@ export class TerminalService extends EventEmitter {
    * Set maximum allowed sessions (can be called dynamically)
    */
   setMaxSessions(limit: number): void {
-    if (limit >= 1 && limit <= 500) {
+    if (limit >= MIN_MAX_SESSIONS && limit <= MAX_MAX_SESSIONS) {
       maxSessions = limit;
       console.log(`[Terminal] Max sessions limit updated to ${limit}`);
     }

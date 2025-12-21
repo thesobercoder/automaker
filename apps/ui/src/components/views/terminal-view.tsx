@@ -627,12 +627,26 @@ export function TerminalView() {
     }
   }, [currentProject?.path, saveTerminalLayout, getPersistedTerminalLayout, clearTerminalState, addTerminalTab, serverUrl]);
 
-  // Save terminal layout whenever it changes (debounced via the effect)
+  // Save terminal layout whenever it changes (debounced to prevent excessive writes)
   // Also save when tabs become empty so closed terminals stay closed on refresh
+  const saveLayoutTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
     if (currentProject?.path && !isRestoringLayoutRef.current) {
-      saveTerminalLayout(currentProject.path);
+      // Debounce saves to prevent excessive localStorage writes during rapid changes
+      if (saveLayoutTimeoutRef.current) {
+        clearTimeout(saveLayoutTimeoutRef.current);
+      }
+      saveLayoutTimeoutRef.current = setTimeout(() => {
+        saveTerminalLayout(currentProject.path);
+        saveLayoutTimeoutRef.current = null;
+      }, 500); // 500ms debounce
     }
+
+    return () => {
+      if (saveLayoutTimeoutRef.current) {
+        clearTimeout(saveLayoutTimeoutRef.current);
+      }
+    };
   }, [terminalState.tabs, currentProject?.path, saveTerminalLayout]);
 
   // Handle password authentication

@@ -3,7 +3,7 @@
  */
 
 import type { Request, Response } from "express";
-import { getTerminalService } from "../../../services/terminal-service.js";
+import { getTerminalService, MIN_MAX_SESSIONS, MAX_MAX_SESSIONS } from "../../../services/terminal-service.js";
 import { getErrorMessage, logError } from "../common.js";
 
 export function createSettingsGetHandler() {
@@ -26,10 +26,10 @@ export function createSettingsUpdateHandler() {
       const { maxSessions } = req.body;
 
       if (typeof maxSessions === "number") {
-        if (maxSessions < 1 || maxSessions > 500) {
+        if (maxSessions < MIN_MAX_SESSIONS || maxSessions > MAX_MAX_SESSIONS) {
           res.status(400).json({
             success: false,
-            error: "maxSessions must be between 1 and 500",
+            error: `maxSessions must be between ${MIN_MAX_SESSIONS} and ${MAX_MAX_SESSIONS}`,
           });
           return;
         }
