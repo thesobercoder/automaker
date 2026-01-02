@@ -1229,12 +1229,14 @@ export class HttpApiClient implements ElectronAPI {
     enhance: (
       originalText: string,
       enhancementMode: string,
-      model?: string
+      model?: string,
+      thinkingLevel?: string
     ): Promise<EnhancePromptResult> =>
       this.post('/api/enhance-prompt', {
         originalText,
         enhancementMode,
         model,
+        thinkingLevel,
       }),
   };
 
@@ -1374,8 +1376,12 @@ export class HttpApiClient implements ElectronAPI {
     checkRemote: (projectPath: string) => this.post('/api/github/check-remote', { projectPath }),
     listIssues: (projectPath: string) => this.post('/api/github/issues', { projectPath }),
     listPRs: (projectPath: string) => this.post('/api/github/prs', { projectPath }),
-    validateIssue: (projectPath: string, issue: IssueValidationInput, model?: string) =>
-      this.post('/api/github/validate-issue', { projectPath, ...issue, model }),
+    validateIssue: (
+      projectPath: string,
+      issue: IssueValidationInput,
+      model?: string,
+      thinkingLevel?: string
+    ) => this.post('/api/github/validate-issue', { projectPath, ...issue, model, thinkingLevel }),
     getValidationStatus: (projectPath: string, issueNumber?: number) =>
       this.post('/api/github/validation-status', { projectPath, issueNumber }),
     stopValidation: (projectPath: string, issueNumber: number) =>
@@ -1459,7 +1465,8 @@ export class HttpApiClient implements ElectronAPI {
       sessionId: string,
       message: string,
       imagePaths?: string[],
-      model?: string
+      model?: string,
+      thinkingLevel?: string
     ): Promise<{
       success: boolean;
       queuedPrompt?: {
@@ -1467,10 +1474,12 @@ export class HttpApiClient implements ElectronAPI {
         message: string;
         imagePaths?: string[];
         model?: string;
+        thinkingLevel?: string;
         addedAt: string;
       };
       error?: string;
-    }> => this.post('/api/agent/queue/add', { sessionId, message, imagePaths, model }),
+    }> =>
+      this.post('/api/agent/queue/add', { sessionId, message, imagePaths, model, thinkingLevel }),
 
     queueList: (
       sessionId: string
@@ -1481,6 +1490,7 @@ export class HttpApiClient implements ElectronAPI {
         message: string;
         imagePaths?: string[];
         model?: string;
+        thinkingLevel?: string;
         addedAt: string;
       }>;
       error?: string;

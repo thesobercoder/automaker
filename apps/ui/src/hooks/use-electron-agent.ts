@@ -22,6 +22,7 @@ interface QueuedPrompt {
   message: string;
   imagePaths?: string[];
   model?: string;
+  thinkingLevel?: string;
   addedAt: string;
 }
 
@@ -520,7 +521,13 @@ export function useElectronAgent({
         }
 
         logger.info('Adding to server queue');
-        const result = await api.agent.queueAdd(sessionId, messageContent, imagePaths, model);
+        const result = await api.agent.queueAdd(
+          sessionId,
+          messageContent,
+          imagePaths,
+          model,
+          thinkingLevel
+        );
 
         if (!result.success) {
           setError(result.error || 'Failed to add to queue');
@@ -530,7 +537,7 @@ export function useElectronAgent({
         setError(err instanceof Error ? err.message : 'Failed to add to queue');
       }
     },
-    [sessionId, workingDirectory, model]
+    [sessionId, workingDirectory, model, thinkingLevel]
   );
 
   // Remove a prompt from the server queue

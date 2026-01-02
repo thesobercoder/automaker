@@ -227,12 +227,13 @@ export function useIssueValidation({
       issue: GitHubIssue,
       options: {
         forceRevalidate?: boolean;
-        model?: string;
+        model?: string | PhaseModelEntry; // Accept either string (backward compat) or PhaseModelEntry
+        modelEntry?: PhaseModelEntry; // New preferred way to pass model with thinking level
         comments?: GitHubComment[];
         linkedPRs?: LinkedPRInfo[];
       } = {}
     ) => {
-      const { forceRevalidate = false, model, comments, linkedPRs } = options;
+      const { forceRevalidate = false, model, modelEntry, comments, linkedPRs } = options;
 
       if (!currentProject?.path) {
         toast.error('No project selected');
@@ -260,8 +261,20 @@ export function useIssueValidation({
       });
 
       // Use provided model override or fall back to phaseModels.validationModel
-      // Extract model string from PhaseModelEntry (handles both old string format and new object format)
-      const modelToUse = model || extractModel(phaseModels.validationModel);
+      // Extract model string and thinking level from PhaseModelEntry (handles both old string format and new object format)
+      const effectiveModelEntry = modelEntry
+        ? modelEntry
+        : model
+          ? typeof model === 'string'
+            ? { model: model as ModelAlias | CursorModelId }
+            : model
+          : phaseModels.validationModel;
+      const normalizedEntry =
+        typeof effectiveModelEntry === 'string'
+          ? { model: effectiveModelEntry as ModelAlias | CursorModelId }
+          : effectiveModelEntry;
+      const modelToUse = normalizedEntry.model;
+      const thinkingLevelToUse = normalizedEntry.thinkingLevel;
 
       try {
         const api = getElectronAPI();
@@ -277,7 +290,8 @@ export function useIssueValidation({
           const result = await api.github.validateIssue(
             currentProject.path,
             validationInput,
-            modelToUse
+            modelToUse,
+            thinkingLevelToUse
           );
 
           if (!result.success) {

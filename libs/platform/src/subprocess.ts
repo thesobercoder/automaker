@@ -4,6 +4,9 @@
 
 import { spawn, type ChildProcess } from 'child_process';
 import readline from 'readline';
+import { createLogger } from '@automaker/utils/logger';
+
+const logger = createLogger('SubprocessManager');
 
 export interface SubprocessOptions {
   command: string;
@@ -38,10 +41,10 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
   };
 
   // Log command without stdin data (which may be large/sensitive)
-  console.log(`[SubprocessManager] Spawning: ${command} ${args.join(' ')}`);
-  console.log(`[SubprocessManager] Working directory: ${cwd}`);
+  logger.info(`Spawning: ${command} ${args.join(' ')}`);
+  logger.info(`Working directory: ${cwd}`);
   if (stdinData) {
-    console.log(`[SubprocessManager] Passing ${stdinData.length} bytes via stdin`);
+    logger.info(`Passing ${stdinData.length} bytes via stdin`);
   }
 
   const childProcess: ChildProcess = spawn(command, args, {
@@ -66,7 +69,7 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
     childProcess.stderr.on('data', (data: Buffer) => {
       const text = data.toString();
       stderrOutput += text;
-      console.error(`[SubprocessManager] stderr: ${text}`);
+      logger.warn(`stderr: ${text}`);
     });
   }
 
@@ -79,7 +82,7 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
     timeoutHandle = setTimeout(() => {
       const elapsed = Date.now() - lastOutputTime;
       if (elapsed >= timeout) {
-        console.error(`[SubprocessManager] Process timeout: no output for ${timeout}ms`);
+        logger.error(`Process timeout: no output for ${timeout}ms`);
         childProcess.kill('SIGTERM');
       }
     }, timeout);
@@ -90,7 +93,7 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
   // Setup abort handling
   if (abortController) {
     abortController.signal.addEventListener('abort', () => {
-      console.log('[SubprocessManager] Abort signal received, killing process');
+      logger.info('Abort signal received, killing process');
       if (timeoutHandle) {
         clearTimeout(timeoutHandle);
       }
@@ -115,7 +118,7 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
           const parsed = JSON.parse(line);
           yield parsed;
         } catch (parseError) {
-          console.error(`[SubprocessManager] Failed to parse JSONL line: ${line}`, parseError);
+          logger.error(`Failed to parse JSONL line: ${line}`, parseError);
           // Yield error but continue processing
           yield {
             type: 'error',
@@ -124,7 +127,7 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
         }
       }
     } catch (error) {
-      console.error('[SubprocessManager] Error reading stdout:', error);
+      logger.error('Error reading stdout:', error);
       throw error;
     } finally {
       if (timeoutHandle) {
@@ -136,12 +139,12 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
   // Wait for process to exit
   const exitCode = await new Promise<number | null>((resolve) => {
     childProcess.on('exit', (code) => {
-      console.log(`[SubprocessManager] Process exited with code: ${code}`);
+      logger.info(`Process exited with code: ${code}`);
       resolve(code);
     });
 
     childProcess.on('error', (error) => {
-      console.error('[SubprocessManager] Process error:', error);
+      logger.error('Process error:', error);
       resolve(null);
     });
   });
@@ -149,7 +152,7 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
   // Handle non-zero exit codes
   if (exitCode !== 0 && exitCode !== null) {
     const errorMessage = stderrOutput || `Process exited with code ${exitCode}`;
-    console.error(`[SubprocessManager] Process failed: ${errorMessage}`);
+    logger.error(`Process failed: ${errorMessage}`);
     yield {
       type: 'error',
       error: errorMessage,
@@ -158,7 +161,7 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
 
   // Process completed successfully
   if (exitCode === 0 && !stderrOutput) {
-    console.log('[SubprocessManager] Process completed successfully');
+    logger.info('Process completed successfully');
   }
 }
 

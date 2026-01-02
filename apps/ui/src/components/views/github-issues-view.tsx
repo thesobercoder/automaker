@@ -31,6 +31,9 @@ export function GitHubIssuesView() {
   // Model override for validation
   const validationModelOverride = useModelOverride({ phase: 'validationModel' });
 
+  // Extract model string for API calls (backward compatibility)
+  const validationModelString = validationModelOverride.effectiveModel;
+
   const { openIssues, closedIssues, loading, refreshing, error, refresh } = useGithubIssues();
 
   const { validatingIssues, cachedValidations, handleValidateIssue, handleViewCachedValidation } =

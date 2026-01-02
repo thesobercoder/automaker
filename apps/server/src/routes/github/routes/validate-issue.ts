@@ -16,6 +16,7 @@ import type {
   CursorModelId,
   GitHubComment,
   LinkedPRInfo,
+  ThinkingLevel,
 } from '@automaker/types';
 import { isCursorModel, DEFAULT_PHASE_MODELS } from '@automaker/types';
 import { resolvePhaseModel } from '@automaker/model-resolver';
@@ -54,6 +55,8 @@ interface ValidateIssueRequestBody {
   issueLabels?: string[];
   /** Model to use for validation (opus, sonnet, haiku, or cursor model IDs) */
   model?: ModelAlias | CursorModelId;
+  /** Thinking level for Claude models (ignored for Cursor models) */
+  thinkingLevel?: ThinkingLevel;
   /** Comments to include in validation analysis */
   comments?: GitHubComment[];
   /** Linked pull requests for this issue */
@@ -78,7 +81,8 @@ async function runValidation(
   abortController: AbortController,
   settingsService?: SettingsService,
   comments?: ValidationComment[],
-  linkedPRs?: ValidationLinkedPR[]
+  linkedPRs?: ValidationLinkedPR[],
+  thinkingLevel?: ThinkingLevel
 ): Promise<void> {
   // Emit start event
   const startEvent: IssueValidationEvent = {
@@ -175,11 +179,15 @@ ${prompt}`;
         '[ValidateIssue]'
       );
 
-      // Get thinkingLevel from phase model settings (the model comes from request, but thinkingLevel from settings)
-      const settings = await settingsService?.getGlobalSettings();
-      const phaseModelEntry =
-        settings?.phaseModels?.validationModel || DEFAULT_PHASE_MODELS.validationModel;
-      const { thinkingLevel } = resolvePhaseModel(phaseModelEntry);
+      // Use thinkingLevel from request if provided, otherwise fall back to settings
+      let effectiveThinkingLevel: ThinkingLevel | undefined = thinkingLevel;
+      if (!effectiveThinkingLevel) {
+        const settings = await settingsService?.getGlobalSettings();
+        const phaseModelEntry =
+          settings?.phaseModels?.validationModel || DEFAULT_PHASE_MODELS.validationModel;
+        const resolved = resolvePhaseModel(phaseModelEntry);
+        effectiveThinkingLevel = resolved.thinkingLevel;
+      }
 
       // Create SDK options with structured output and abort controller
       const options = createSuggestionsOptions({
@@ -188,7 +196,7 @@ ${prompt}`;
         systemPrompt: ISSUE_VALIDATION_SYSTEM_PROMPT,
         abortController,
         autoLoadClaudeMd,
-        thinkingLevel,
+        thinkingLevel: effectiveThinkingLevel,
         outputFormat: {
           type: 'json_schema',
           schema: issueValidationSchema as Record<string, unknown>,
@@ -308,6 +316,7 @@ export function createValidateIssueHandler(
         issueBody,
         issueLabels,
         model = 'opus',
+        thinkingLevel,
         comments: rawComments,
         linkedPRs: rawLinkedPRs,
       } = req.body as ValidateIssueRequestBody;
@@ -392,7 +401,8 @@ export function createValidateIssueHandler(
         abortController,
         settingsService,
         validationComments,
-        validationLinkedPRs
+        validationLinkedPRs,
+        thinkingLevel
       )
         .catch(() => {
           // Error is already handled inside runValidation (event emitted)

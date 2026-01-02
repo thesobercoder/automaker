@@ -6,22 +6,34 @@ export interface UseModelOverrideOptions {
   /** Which phase this override is for */
   phase: PhaseModelKey;
   /** Initial override value (optional) */
-  initialOverride?: ModelAlias | CursorModelId | null;
+  initialOverride?: PhaseModelEntry | null;
 }
 
 export interface UseModelOverrideResult {
-  /** The effective model (override or global default) */
+  /** The effective model entry (override or global default) */
+  effectiveModelEntry: PhaseModelEntry;
+  /** The effective model string (for backward compatibility with APIs that only accept strings) */
   effectiveModel: ModelAlias | CursorModelId;
   /** Whether the model is currently overridden */
   isOverridden: boolean;
   /** Set a model override */
-  setOverride: (model: ModelAlias | CursorModelId | null) => void;
+  setOverride: (entry: PhaseModelEntry | null) => void;
   /** Clear the override and use global default */
   clearOverride: () => void;
   /** The global default for this phase */
-  globalDefault: ModelAlias | CursorModelId;
+  globalDefault: PhaseModelEntry;
   /** The current override value (null if not overridden) */
-  override: ModelAlias | CursorModelId | null;
+  override: PhaseModelEntry | null;
+}
+
+/**
+ * Normalize PhaseModelEntry or string to PhaseModelEntry
+ */
+function normalizeEntry(entry: PhaseModelEntry | string): PhaseModelEntry {
+  if (typeof entry === 'string') {
+    return { model: entry as ModelAlias | CursorModelId };
+  }
+  return entry;
 }
 
 /**
@@ -38,18 +50,18 @@ function extractModel(entry: PhaseModelEntry | string): ModelAlias | CursorModel
  * Hook for managing model overrides per phase
  *
  * Provides a simple way to allow users to override the global phase model
- * for a specific run or context.
+ * for a specific run or context. Now supports PhaseModelEntry with thinking levels.
  *
  * @example
  * ```tsx
  * function EnhanceDialog() {
- *   const { effectiveModel, isOverridden, setOverride, clearOverride } = useModelOverride({
+ *   const { effectiveModelEntry, isOverridden, setOverride, clearOverride } = useModelOverride({
  *     phase: 'enhancementModel',
  *   });
  *
  *   return (
  *     <ModelOverrideTrigger
- *       currentModel={effectiveModel}
+ *       currentModelEntry={effectiveModelEntry}
  *       onModelChange={setOverride}
  *       phase="enhancementModel"
  *       isOverridden={isOverridden}
@@ -63,19 +75,25 @@ export function useModelOverride({
   initialOverride = null,
 }: UseModelOverrideOptions): UseModelOverrideResult {
   const { phaseModels } = useAppStore();
-  const [override, setOverrideState] = useState<ModelAlias | CursorModelId | null>(initialOverride);
+  const [override, setOverrideState] = useState<PhaseModelEntry | null>(
+    initialOverride ? normalizeEntry(initialOverride) : null
+  );
 
-  // Extract model string from PhaseModelEntry (handles both old string format and new object format)
-  const globalDefault = extractModel(phaseModels[phase]);
+  // Normalize global default to PhaseModelEntry
+  const globalDefault = normalizeEntry(phaseModels[phase]);
 
-  const effectiveModel = useMemo(() => {
+  const effectiveModelEntry = useMemo(() => {
     return override ?? globalDefault;
   }, [override, globalDefault]);
 
+  const effectiveModel = useMemo(() => {
+    return effectiveModelEntry.model;
+  }, [effectiveModelEntry]);
+
   const isOverridden = override !== null;
 
-  const setOverride = useCallback((model: ModelAlias | CursorModelId | null) => {
-    setOverrideState(model);
+  const setOverride = useCallback((entry: PhaseModelEntry | null) => {
+    setOverrideState(entry ? normalizeEntry(entry) : null);
   }, []);
 
   const clearOverride = useCallback(() => {
@@ -83,6 +101,7 @@ export function useModelOverride({
   }, []);
 
   return {
+    effectiveModelEntry,
     effectiveModel,
     isOverridden,
     setOverride,

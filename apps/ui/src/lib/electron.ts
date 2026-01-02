@@ -207,7 +207,8 @@ export interface GitHubAPI {
   validateIssue: (
     projectPath: string,
     issue: IssueValidationInput,
-    model?: ModelAlias
+    model?: ModelAlias,
+    thinkingLevel?: string
   ) => Promise<{ success: boolean; message?: string; issueNumber?: number; error?: string }>;
   /** Check validation status for an issue or all issues */
   getValidationStatus: (

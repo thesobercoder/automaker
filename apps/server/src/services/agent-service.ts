@@ -45,6 +45,7 @@ interface QueuedPrompt {
   message: string;
   imagePaths?: string[];
   model?: string;
+  thinkingLevel?: ThinkingLevel;
   addedAt: string;
 }
 
@@ -637,7 +638,12 @@ export class AgentService {
    */
   async addToQueue(
     sessionId: string,
-    prompt: { message: string; imagePaths?: string[]; model?: string }
+    prompt: {
+      message: string;
+      imagePaths?: string[];
+      model?: string;
+      thinkingLevel?: ThinkingLevel;
+    }
   ): Promise<{ success: boolean; queuedPrompt?: QueuedPrompt; error?: string }> {
     const session = this.sessions.get(sessionId);
     if (!session) {
@@ -649,6 +655,7 @@ export class AgentService {
       message: prompt.message,
       imagePaths: prompt.imagePaths,
       model: prompt.model,
+      thinkingLevel: prompt.thinkingLevel,
       addedAt: new Date().toISOString(),
     };
 
@@ -778,6 +785,7 @@ export class AgentService {
         message: nextPrompt.message,
         imagePaths: nextPrompt.imagePaths,
         model: nextPrompt.model,
+        thinkingLevel: nextPrompt.thinkingLevel,
       });
     } catch (error) {
       this.logger.error('Failed to process queued prompt:', error);

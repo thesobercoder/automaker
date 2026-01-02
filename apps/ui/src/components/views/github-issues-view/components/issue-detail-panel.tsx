@@ -58,6 +58,7 @@ export function IssueDetailPanel({
   const getValidationOptions = (forceRevalidate = false) => {
     return {
       forceRevalidate,
+      modelEntry: modelOverride.effectiveModelEntry, // Pass the full PhaseModelEntry to preserve thinking level
       comments: includeCommentsInAnalysis && comments.length > 0 ? comments : undefined,
       linkedPRs: issue.linkedPRs?.map((pr) => ({
         number: pr.number,
@@ -119,12 +120,13 @@ export function IssueDetailPanel({
                     View (stale)
                   </Button>
                   <ModelOverrideTrigger
-                    currentModel={modelOverride.effectiveModel}
+                    currentModelEntry={modelOverride.effectiveModelEntry}
                     onModelChange={modelOverride.setOverride}
                     phase="validationModel"
                     isOverridden={modelOverride.isOverridden}
                     size="sm"
                     variant="icon"
+                    className="mx-1"
                   />
                   <Button
                     variant="default"
@@ -141,12 +143,13 @@ export function IssueDetailPanel({
             return (
               <>
                 <ModelOverrideTrigger
-                  currentModel={modelOverride.effectiveModel}
+                  currentModelEntry={modelOverride.effectiveModelEntry}
                   onModelChange={modelOverride.setOverride}
                   phase="validationModel"
                   isOverridden={modelOverride.isOverridden}
                   size="sm"
                   variant="icon"
+                  className="mr-1"
                 />
                 <Button
                   variant="default"

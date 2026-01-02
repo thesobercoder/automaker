@@ -240,7 +240,8 @@ export function EditFeatureDialog({
       const result = await api.enhancePrompt?.enhance(
         editingFeature.description,
         enhancementMode,
-        enhancementOverride.effectiveModel
+        enhancementOverride.effectiveModel, // API accepts string, extract from PhaseModelEntry
+        enhancementOverride.effectiveModelEntry.thinkingLevel // Pass thinking level
       );
 
       if (result?.success && result.enhancedText) {
@@ -392,7 +393,7 @@ export function EditFeatureDialog({
               </Button>
 
               <ModelOverrideTrigger
-                currentModel={enhancementOverride.effectiveModel}
+                currentModelEntry={enhancementOverride.effectiveModelEntry}
                 onModelChange={enhancementOverride.setOverride}
                 phase="enhancementModel"
                 isOverridden={enhancementOverride.isOverridden}

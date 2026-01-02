@@ -9,7 +9,7 @@ import type { Request, Response } from 'express';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import { createLogger } from '@automaker/utils';
 import { resolveModelString } from '@automaker/model-resolver';
-import { CLAUDE_MODEL_MAP, isCursorModel } from '@automaker/types';
+import { CLAUDE_MODEL_MAP, isCursorModel, ThinkingLevel } from '@automaker/types';
 import { ProviderFactory } from '../../../providers/provider-factory.js';
 import type { SettingsService } from '../../../services/settings-service.js';
 import { getPromptCustomization } from '../../../lib/settings-helpers.js';
@@ -31,6 +31,8 @@ interface EnhanceRequestBody {
   enhancementMode: string;
   /** Optional model override */
   model?: string;
+  /** Optional thinking level for Claude models (ignored for Cursor models) */
+  thinkingLevel?: ThinkingLevel;
 }
 
 /**
@@ -128,7 +130,8 @@ export function createEnhanceHandler(
 ): (req: Request, res: Response) => Promise<void> {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const { originalText, enhancementMode, model } = req.body as EnhanceRequestBody;
+      const { originalText, enhancementMode, model, thinkingLevel } =
+        req.body as EnhanceRequestBody;
 
       // Validate required fields
       if (!originalText || typeof originalText !== 'string') {
@@ -213,6 +216,7 @@ export function createEnhanceHandler(
             maxTurns: 1,
             allowedTools: [],
             permissionMode: 'acceptEdits',
+            thinkingLevel: thinkingLevel, // Pass thinking level for Claude models
           },
         });
 

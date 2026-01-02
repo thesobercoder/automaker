@@ -34,6 +34,16 @@ import { ModelOverrideTrigger } from '@/components/shared/model-override-trigger
 import { useAppStore } from '@/store/app-store';
 
 /**
+ * Normalize PhaseModelEntry or string to PhaseModelEntry
+ */
+function normalizeEntry(entry: PhaseModelEntry | string): PhaseModelEntry {
+  if (typeof entry === 'string') {
+    return { model: entry as ModelAlias | CursorModelId };
+  }
+  return entry;
+}
+
+/**
  * Extract model string from PhaseModelEntry or string
  */
 function extractModel(entry: PhaseModelEntry | string): ModelAlias | CursorModelId {
@@ -71,7 +81,7 @@ export function BacklogPlanDialog({
   const [prompt, setPrompt] = useState('');
   const [expandedChanges, setExpandedChanges] = useState<Set<number>>(new Set());
   const [selectedChanges, setSelectedChanges] = useState<Set<number>>(new Set());
-  const [modelOverride, setModelOverride] = useState<ModelAlias | CursorModelId | null>(null);
+  const [modelOverride, setModelOverride] = useState<PhaseModelEntry | null>(null);
 
   const { phaseModels } = useAppStore();
 
@@ -105,7 +115,8 @@ export function BacklogPlanDialog({
     setIsGeneratingPlan(true);
 
     // Use model override if set, otherwise use global default (extract model string from PhaseModelEntry)
-    const effectiveModel = modelOverride || extractModel(phaseModels.backlogPlanningModel);
+    const effectiveModelEntry = modelOverride || normalizeEntry(phaseModels.backlogPlanningModel);
+    const effectiveModel = effectiveModelEntry.model;
     const result = await api.backlogPlan.generate(projectPath, prompt, effectiveModel);
     if (!result.success) {
       setIsGeneratingPlan(false);
@@ -381,8 +392,9 @@ export function BacklogPlanDialog({
     }
   };
 
-  // Get effective model (override or global default) - extract model string from PhaseModelEntry
-  const effectiveModel = modelOverride || extractModel(phaseModels.backlogPlanningModel);
+  // Get effective model entry (override or global default)
+  const effectiveModelEntry = modelOverride || normalizeEntry(phaseModels.backlogPlanningModel);
+  const effectiveModel = effectiveModelEntry.model;
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
@@ -407,7 +419,7 @@ export function BacklogPlanDialog({
               <div className="flex items-center gap-2 mr-auto">
                 <span className="text-xs text-muted-foreground">Model:</span>
                 <ModelOverrideTrigger
-                  currentModel={effectiveModel}
+                  currentModelEntry={effectiveModelEntry}
                   onModelChange={setModelOverride}
                   phase="backlogPlanningModel"
                   size="sm"

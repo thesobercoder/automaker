@@ -323,7 +323,8 @@ export function AddFeatureDialog({
       const result = await api.enhancePrompt?.enhance(
         newFeature.description,
         enhancementMode,
-        enhancementOverride.effectiveModel
+        enhancementOverride.effectiveModel, // API accepts string, extract from PhaseModelEntry
+        enhancementOverride.effectiveModelEntry.thinkingLevel // Pass thinking level
       );
 
       if (result?.success && result.enhancedText) {
@@ -512,7 +513,7 @@ export function AddFeatureDialog({
               </Button>
 
               <ModelOverrideTrigger
-                currentModel={enhancementOverride.effectiveModel}
+                currentModelEntry={enhancementOverride.effectiveModelEntry}
                 onModelChange={enhancementOverride.setOverride}
                 phase="enhancementModel"
                 isOverridden={enhancementOverride.isOverridden}

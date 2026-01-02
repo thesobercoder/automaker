@@ -1,5 +1,5 @@
 import type { GitHubIssue, StoredValidation, GitHubComment } from '@/lib/electron';
-import type { ModelAlias, CursorModelId, LinkedPRInfo } from '@automaker/types';
+import type { ModelAlias, CursorModelId, LinkedPRInfo, PhaseModelEntry } from '@automaker/types';
 
 export interface IssueRowProps {
   issue: GitHubIssue;
@@ -36,8 +36,9 @@ export interface IssueDetailPanelProps {
   formatDate: (date: string) => string;
   /** Model override state */
   modelOverride: {
+    effectiveModelEntry: PhaseModelEntry;
     effectiveModel: ModelAlias | CursorModelId;
     isOverridden: boolean;
-    setOverride: (model: ModelAlias | CursorModelId | null) => void;
+    setOverride: (entry: PhaseModelEntry | null) => void;
   };
 }
