@@ -516,6 +516,7 @@ async function main() {
   console.log('═══════════════════════════════════════════════════════');
   console.log('  1) Web Application (Browser)');
   console.log('  2) Desktop Application (Electron)');
+  console.log('  3) Docker Container');
   console.log('═══════════════════════════════════════════════════════');
   console.log('');
 
@@ -533,7 +534,7 @@ async function main() {
 
   // Prompt for choice
   while (true) {
-    const choice = await prompt('Enter your choice (1 or 2): ');
+    const choice = await prompt('Enter your choice (1, 2, or 3): ');
 
     if (choice === '1') {
       console.log('');
@@ -635,8 +636,22 @@ async function main() {
       });
 
       break;
+    } else if (choice === '3') {
+      console.log('');
+      log('Launching Docker Container...', 'blue');
+      console.log('');
+
+      // Run docker compose up --build via npm run dev:docker
+      const dockerProcess = runNpm(['run', 'dev:docker'], {
+        stdio: 'inherit',
+      });
+      await new Promise((resolve) => {
+        dockerProcess.on('close', resolve);
+      });
+
+      break;
     } else {
-      log('Invalid choice. Please enter 1 or 2.', 'red');
+      log('Invalid choice. Please enter 1, 2, or 3.', 'red');
     }
   }
 }
