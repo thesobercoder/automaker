@@ -311,9 +311,6 @@ function buildCombinedPrompt(options: ExecuteOptions, systemPromptText?: string 
 }
 
 function formatConfigValue(value: string | number | boolean): string {
-  if (typeof value === 'string') {
-    return JSON.stringify(value);
-  }
   return String(value);
 }
 
