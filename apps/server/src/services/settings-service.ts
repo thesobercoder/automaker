@@ -153,14 +153,6 @@ export class SettingsService {
     const storedVersion = settings.version || 1;
     let needsSave = false;
 
-    // Migration v1 -> v2: Force enableSandboxMode to false for existing users
-    // Sandbox mode can cause issues on some systems, so we're disabling it by default
-    if (storedVersion < 2) {
-      logger.info('Migrating settings from v1 to v2: disabling sandbox mode');
-      result.enableSandboxMode = false;
-      needsSave = true;
-    }
-
     // Migration v2 -> v3: Convert string phase models to PhaseModelEntry objects
     // Note: migratePhaseModels() handles the actual conversion for both v1 and v2 formats
     if (storedVersion < 3) {
@@ -537,6 +529,10 @@ export class SettingsService {
           appState.enableDependencyBlocking !== undefined
             ? (appState.enableDependencyBlocking as boolean)
             : true,
+        skipVerificationInAutoMode:
+          appState.skipVerificationInAutoMode !== undefined
+            ? (appState.skipVerificationInAutoMode as boolean)
+            : false,
         useWorktrees: (appState.useWorktrees as boolean) || false,
         showProfilesOnly: (appState.showProfilesOnly as boolean) || false,
         defaultPlanningMode:

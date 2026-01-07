@@ -79,6 +79,7 @@ export function useBoardActions({
     moveFeature,
     useWorktrees,
     enableDependencyBlocking,
+    skipVerificationInAutoMode,
     isPrimaryWorktreeBranch,
     getPrimaryWorktreeBranch,
   } = useAppStore();
@@ -805,12 +806,14 @@ export function useBoardActions({
     // Sort by priority (lower number = higher priority, priority 1 is highest)
     // Features with blocking dependencies are sorted to the end
     const sortedBacklog = [...backlogFeatures].sort((a, b) => {
-      const aBlocked = enableDependencyBlocking
-        ? getBlockingDependencies(a, features).length > 0
-        : false;
-      const bBlocked = enableDependencyBlocking
-        ? getBlockingDependencies(b, features).length > 0
-        : false;
+      const aBlocked =
+        enableDependencyBlocking && !skipVerificationInAutoMode
+          ? getBlockingDependencies(a, features).length > 0
+          : false;
+      const bBlocked =
+        enableDependencyBlocking && !skipVerificationInAutoMode
+          ? getBlockingDependencies(b, features).length > 0
+          : false;
 
       // Blocked features go to the end
       if (aBlocked && !bBlocked) return 1;
@@ -822,14 +825,14 @@ export function useBoardActions({
 
     // Find the first feature without blocking dependencies
     const featureToStart = sortedBacklog.find((f) => {
-      if (!enableDependencyBlocking) return true;
+      if (!enableDependencyBlocking || skipVerificationInAutoMode) return true;
       return getBlockingDependencies(f, features).length === 0;
     });
 
     if (!featureToStart) {
       toast.info('No eligible features', {
         description:
-          'All backlog features have unmet dependencies. Complete their dependencies first.',
+          'All backlog features have unmet dependencies. Complete their dependencies first (or enable "Skip verification requirement" in Auto Mode settings).',
       });
       return;
     }
@@ -846,6 +849,7 @@ export function useBoardActions({
     isPrimaryWorktreeBranch,
     getPrimaryWorktreeBranch,
     enableDependencyBlocking,
+    skipVerificationInAutoMode,
   ]);
 
   const handleArchiveAllVerified = useCallback(async () => {

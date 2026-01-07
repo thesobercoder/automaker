@@ -1,9 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Project, TrashedProject } from '@/lib/electron';
+import { createLogger } from '@automaker/utils/logger';
 import type {
   Feature as BaseFeature,
   FeatureImagePath,
+  FeatureTextFilePath,
   ModelAlias,
   PlanningMode,
   AIProfile,
@@ -19,8 +21,10 @@ import type {
 } from '@automaker/types';
 import { getAllCursorModelIds, DEFAULT_PHASE_MODELS } from '@automaker/types';
 
+const logger = createLogger('AppStore');
+
 // Re-export types for convenience
-export type { ThemeMode, ModelAlias };
+export type { ModelAlias };
 
 export type ViewMode =
   | 'welcome'
@@ -460,6 +464,7 @@ export interface AppState {
   // Feature Default Settings
   defaultSkipTests: boolean; // Default value for skip tests when creating new features
   enableDependencyBlocking: boolean; // When true, show blocked badges and warnings for features with incomplete dependencies (default: true)
+  skipVerificationInAutoMode: boolean; // When true, auto-mode grabs features even if dependencies are not verified (only checks they're not running)
 
   // Worktree Settings
   useWorktrees: boolean; // Whether to use git worktree isolation for features (default: false)
@@ -506,8 +511,6 @@ export interface AppState {
 
   // Claude Agent SDK Settings
   autoLoadClaudeMd: boolean; // Auto-load CLAUDE.md files using SDK's settingSources option
-  enableSandboxMode: boolean; // Enable sandbox mode for bash commands (may cause issues on some systems)
-  skipSandboxWarning: boolean; // Skip the sandbox environment warning dialog on startup
 
   // MCP Servers
   mcpServers: MCPServerConfig[]; // List of configured MCP servers for agent use
@@ -749,6 +752,7 @@ export interface AppActions {
   // Feature Default Settings actions
   setDefaultSkipTests: (skip: boolean) => void;
   setEnableDependencyBlocking: (enabled: boolean) => void;
+  setSkipVerificationInAutoMode: (enabled: boolean) => Promise<void>;
 
   // Worktree Settings actions
   setUseWorktrees: (enabled: boolean) => void;
@@ -804,8 +808,6 @@ export interface AppActions {
 
   // Claude Agent SDK Settings actions
   setAutoLoadClaudeMd: (enabled: boolean) => Promise<void>;
-  setEnableSandboxMode: (enabled: boolean) => Promise<void>;
-  setSkipSandboxWarning: (skip: boolean) => Promise<void>;
 
   // Prompt Customization actions
   setPromptCustomization: (customization: PromptCustomization) => Promise<void>;
@@ -1006,6 +1008,7 @@ const initialState: AppState = {
   boardViewMode: 'kanban', // Default to kanban view
   defaultSkipTests: true, // Default to manual verification (tests disabled)
   enableDependencyBlocking: true, // Default to enabled (show dependency blocking UI)
+  skipVerificationInAutoMode: false, // Default to disabled (require dependencies to be verified)
   useWorktrees: false, // Default to disabled (worktree feature is experimental)
   currentWorktreeByProject: {},
   worktreesByProject: {},
@@ -1019,8 +1022,6 @@ const initialState: AppState = {
   enabledCursorModels: getAllCursorModelIds(), // All Cursor models enabled by default
   cursorDefaultModel: 'auto', // Default to auto selection
   autoLoadClaudeMd: false, // Default to disabled (user must opt-in)
-  enableSandboxMode: false, // Default to disabled (can be enabled for additional security)
-  skipSandboxWarning: false, // Default to disabled (show sandbox warning dialog)
   mcpServers: [], // No MCP servers configured by default
   promptCustomization: {}, // Empty by default - all prompts use built-in defaults
   aiProfiles: DEFAULT_AI_PROFILES,
@@ -1574,6 +1575,12 @@ export const useAppStore = create<AppState & AppActions>()(
       // Feature Default Settings actions
       setDefaultSkipTests: (skip) => set({ defaultSkipTests: skip }),
       setEnableDependencyBlocking: (enabled) => set({ enableDependencyBlocking: enabled }),
+      setSkipVerificationInAutoMode: async (enabled) => {
+        set({ skipVerificationInAutoMode: enabled });
+        // Sync to server settings file
+        const { syncSettingsToServer } = await import('@/hooks/use-settings-migration');
+        await syncSettingsToServer();
+      },
 
       // Worktree Settings actions
       setUseWorktrees: (enabled) => set({ useWorktrees: enabled }),
@@ -1703,22 +1710,15 @@ export const useAppStore = create<AppState & AppActions>()(
 
       // Claude Agent SDK Settings actions
       setAutoLoadClaudeMd: async (enabled) => {
+        const previous = get().autoLoadClaudeMd;
         set({ autoLoadClaudeMd: enabled });
         // Sync to server settings file
         const { syncSettingsToServer } = await import('@/hooks/use-settings-migration');
-        await syncSettingsToServer();
-      },
-      setEnableSandboxMode: async (enabled) => {
-        set({ enableSandboxMode: enabled });
-        // Sync to server settings file
-        const { syncSettingsToServer } = await import('@/hooks/use-settings-migration');
-        await syncSettingsToServer();
-      },
-      setSkipSandboxWarning: async (skip) => {
-        set({ skipSandboxWarning: skip });
-        // Sync to server settings file
-        const { syncSettingsToServer } = await import('@/hooks/use-settings-migration');
-        await syncSettingsToServer();
+        const ok = await syncSettingsToServer();
+        if (!ok) {
+          logger.error('Failed to sync autoLoadClaudeMd setting to server - reverting');
+          set({ autoLoadClaudeMd: previous });
+        }
       },
       // Prompt Customization actions
       setPromptCustomization: async (customization) => {
@@ -2688,8 +2688,9 @@ export const useAppStore = create<AppState & AppActions>()(
         const current = get().terminalState;
         if (current.tabs.length === 0) {
           // Nothing to save, clear any existing layout
-          const { [projectPath]: _, ...rest } = get().terminalLayoutByProject;
-          set({ terminalLayoutByProject: rest });
+          const next = { ...get().terminalLayoutByProject };
+          delete next[projectPath];
+          set({ terminalLayoutByProject: next });
           return;
         }
 
@@ -2745,8 +2746,9 @@ export const useAppStore = create<AppState & AppActions>()(
       },
 
       clearPersistedTerminalLayout: (projectPath) => {
-        const { [projectPath]: _, ...rest } = get().terminalLayoutByProject;
-        set({ terminalLayoutByProject: rest });
+        const next = { ...get().terminalLayoutByProject };
+        delete next[projectPath];
+        set({ terminalLayoutByProject: next });
       },
 
       // Spec Creation actions
@@ -2995,6 +2997,7 @@ export const useAppStore = create<AppState & AppActions>()(
           // Auto-mode should always default to OFF on app refresh
           defaultSkipTests: state.defaultSkipTests,
           enableDependencyBlocking: state.enableDependencyBlocking,
+          skipVerificationInAutoMode: state.skipVerificationInAutoMode,
           useWorktrees: state.useWorktrees,
           currentWorktreeByProject: state.currentWorktreeByProject,
           worktreesByProject: state.worktreesByProject,
@@ -3007,8 +3010,6 @@ export const useAppStore = create<AppState & AppActions>()(
           enabledCursorModels: state.enabledCursorModels,
           cursorDefaultModel: state.cursorDefaultModel,
           autoLoadClaudeMd: state.autoLoadClaudeMd,
-          enableSandboxMode: state.enableSandboxMode,
-          skipSandboxWarning: state.skipSandboxWarning,
           // MCP settings
           mcpServers: state.mcpServers,
           // Prompt customization

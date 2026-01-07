@@ -31,6 +31,8 @@ export function SettingsView() {
     setDefaultSkipTests,
     enableDependencyBlocking,
     setEnableDependencyBlocking,
+    skipVerificationInAutoMode,
+    setSkipVerificationInAutoMode,
     useWorktrees,
     setUseWorktrees,
     showProfilesOnly,
@@ -48,10 +50,6 @@ export function SettingsView() {
     aiProfiles,
     autoLoadClaudeMd,
     setAutoLoadClaudeMd,
-    enableSandboxMode,
-    setEnableSandboxMode,
-    skipSandboxWarning,
-    setSkipSandboxWarning,
     promptCustomization,
     setPromptCustomization,
   } = useAppStore();
@@ -130,6 +128,7 @@ export function SettingsView() {
             showProfilesOnly={showProfilesOnly}
             defaultSkipTests={defaultSkipTests}
             enableDependencyBlocking={enableDependencyBlocking}
+            skipVerificationInAutoMode={skipVerificationInAutoMode}
             useWorktrees={useWorktrees}
             defaultPlanningMode={defaultPlanningMode}
             defaultRequirePlanApproval={defaultRequirePlanApproval}
@@ -138,6 +137,7 @@ export function SettingsView() {
             onShowProfilesOnlyChange={setShowProfilesOnly}
             onDefaultSkipTestsChange={setDefaultSkipTests}
             onEnableDependencyBlockingChange={setEnableDependencyBlocking}
+            onSkipVerificationInAutoModeChange={setSkipVerificationInAutoMode}
             onUseWorktreesChange={setUseWorktrees}
             onDefaultPlanningModeChange={setDefaultPlanningMode}
             onDefaultRequirePlanApprovalChange={setDefaultRequirePlanApproval}
@@ -149,8 +149,6 @@ export function SettingsView() {
           <DangerZoneSection
             project={settingsProject}
             onDeleteClick={() => setShowDeleteDialog(true)}
-            skipSandboxWarning={skipSandboxWarning}
-            onResetSandboxWarning={() => setSkipSandboxWarning(false)}
           />
         );
       default:

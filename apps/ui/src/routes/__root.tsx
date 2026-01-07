@@ -16,28 +16,19 @@ import {
   initApiKey,
   isElectronMode,
   verifySession,
-  checkSandboxEnvironment,
   getServerUrlSync,
   checkExternalServerMode,
   isExternalServerMode,
 } from '@/lib/http-api-client';
 import { Toaster } from 'sonner';
 import { ThemeOption, themeOptions } from '@/config/theme-options';
-import { SandboxRiskDialog } from '@/components/dialogs/sandbox-risk-dialog';
-import { SandboxRejectionScreen } from '@/components/dialogs/sandbox-rejection-screen';
 import { LoadingState } from '@/components/ui/loading-state';
 
 const logger = createLogger('RootLayout');
 
 function RootLayoutContent() {
   const location = useLocation();
-  const {
-    setIpcConnected,
-    currentProject,
-    getEffectiveTheme,
-    skipSandboxWarning,
-    setSkipSandboxWarning,
-  } = useAppStore();
+  const { setIpcConnected, currentProject, getEffectiveTheme } = useAppStore();
   const { setupComplete } = useSetupStore();
   const navigate = useNavigate();
   const [isMounted, setIsMounted] = useState(false);
@@ -51,12 +42,6 @@ function RootLayoutContent() {
 
   const isSetupRoute = location.pathname === '/setup';
   const isLoginRoute = location.pathname === '/login';
-
-  // Sandbox environment check state
-  type SandboxStatus = 'pending' | 'containerized' | 'needs-confirmation' | 'denied' | 'confirmed';
-  // Always start from pending on a fresh page load so the user sees the prompt
-  // each time the app is launched/refreshed (unless running in a container).
-  const [sandboxStatus, setSandboxStatus] = useState<SandboxStatus>('pending');
 
   // Hidden streamer panel - opens with "\" key
   const handleStreamerPanelShortcut = useCallback((event: KeyboardEvent) => {
@@ -102,73 +87,6 @@ function RootLayoutContent() {
 
   useEffect(() => {
     setIsMounted(true);
-  }, []);
-
-  // Check sandbox environment on mount
-  useEffect(() => {
-    // Skip if already decided
-    if (sandboxStatus !== 'pending') {
-      return;
-    }
-
-    const checkSandbox = async () => {
-      try {
-        const result = await checkSandboxEnvironment();
-
-        if (result.isContainerized) {
-          // Running in a container, no warning needed
-          setSandboxStatus('containerized');
-        } else if (skipSandboxWarning) {
-          // User opted to skip the warning, auto-confirm
-          setSandboxStatus('confirmed');
-        } else {
-          // Not containerized, show warning dialog
-          setSandboxStatus('needs-confirmation');
-        }
-      } catch (error) {
-        logger.error('Failed to check environment:', error);
-        // On error, assume not containerized and show warning
-        if (skipSandboxWarning) {
-          setSandboxStatus('confirmed');
-        } else {
-          setSandboxStatus('needs-confirmation');
-        }
-      }
-    };
-
-    checkSandbox();
-  }, [sandboxStatus, skipSandboxWarning]);
-
-  // Handle sandbox risk confirmation
-  const handleSandboxConfirm = useCallback(
-    (skipInFuture: boolean) => {
-      if (skipInFuture) {
-        setSkipSandboxWarning(true);
-      }
-      setSandboxStatus('confirmed');
-    },
-    [setSkipSandboxWarning]
-  );
-
-  // Handle sandbox risk denial
-  const handleSandboxDeny = useCallback(async () => {
-    if (isElectron()) {
-      // In Electron mode, quit the application
-      // Use window.electronAPI directly since getElectronAPI() returns the HTTP client
-      try {
-        const electronAPI = window.electronAPI;
-        if (electronAPI?.quit) {
-          await electronAPI.quit();
-        } else {
-          logger.error('quit() not available on electronAPI');
-        }
-      } catch (error) {
-        logger.error('Failed to quit app:', error);
-      }
-    } else {
-      // In web mode, show rejection screen
-      setSandboxStatus('denied');
-    }
   }, []);
 
   // Ref to prevent concurrent auth checks from running
@@ -330,31 +248,11 @@ function RootLayoutContent() {
     }
   }, [deferredTheme]);
 
-  // Show rejection screen if user denied sandbox risk (web mode only)
-  if (sandboxStatus === 'denied' && !isElectron()) {
-    return <SandboxRejectionScreen />;
-  }
-
-  // Show loading while checking sandbox environment
-  if (sandboxStatus === 'pending') {
-    return (
-      <main className="flex h-screen items-center justify-center" data-testid="app-container">
-        <LoadingState message="Checking environment..." />
-      </main>
-    );
-  }
-
   // Show login page (full screen, no sidebar)
   if (isLoginRoute) {
     return (
       <main className="h-screen overflow-hidden" data-testid="app-container">
         <Outlet />
-        {/* Show sandbox dialog on top of login page if needed */}
-        <SandboxRiskDialog
-          open={sandboxStatus === 'needs-confirmation'}
-          onConfirm={handleSandboxConfirm}
-          onDeny={handleSandboxDeny}
-        />
       </main>
     );
   }
@@ -386,12 +284,6 @@ function RootLayoutContent() {
     return (
       <main className="h-screen overflow-hidden" data-testid="app-container">
         <Outlet />
-        {/* Show sandbox dialog on top of setup page if needed */}
-        <SandboxRiskDialog
-          open={sandboxStatus === 'needs-confirmation'}
-          onConfirm={handleSandboxConfirm}
-          onDeny={handleSandboxDeny}
-        />
       </main>
     );
   }
@@ -420,13 +312,6 @@ function RootLayoutContent() {
         }`}
       />
       <Toaster richColors position="bottom-right" />
-
-      {/* Show sandbox dialog if needed */}
-      <SandboxRiskDialog
-        open={sandboxStatus === 'needs-confirmation'}
-        onConfirm={handleSandboxConfirm}
-        onDeny={handleSandboxDeny}
-      />
     </main>
   );
 }

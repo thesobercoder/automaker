@@ -23,6 +23,7 @@ import { getHttpApiClient, waitForApiKeyInit } from '@/lib/http-api-client';
 import { isElectron } from '@/lib/electron';
 import { getItem, removeItem } from '@/lib/storage';
 import { useAppStore } from '@/store/app-store';
+import type { GlobalSettings } from '@automaker/types';
 
 const logger = createLogger('SettingsMigration');
 
@@ -123,7 +124,63 @@ export function useSettingsMigration(): MigrationState {
 
         // If settings files already exist, no migration needed
         if (!status.needsMigration) {
-          logger.info('Settings files exist, no migration needed');
+          logger.info('Settings files exist - hydrating UI store from server');
+
+          // IMPORTANT: the server settings file is now the source of truth.
+          // If localStorage/Zustand get out of sync (e.g. cleared localStorage),
+          // the UI can show stale values even though the server will execute with
+          // the file-based settings. Hydrate the store from the server on startup.
+          try {
+            const global = await api.settings.getGlobal();
+            if (global.success && global.settings) {
+              const serverSettings = global.settings as unknown as GlobalSettings;
+              const current = useAppStore.getState();
+
+              useAppStore.setState({
+                theme: serverSettings.theme as unknown as import('@/store/app-store').ThemeMode,
+                sidebarOpen: serverSettings.sidebarOpen,
+                chatHistoryOpen: serverSettings.chatHistoryOpen,
+                kanbanCardDetailLevel: serverSettings.kanbanCardDetailLevel,
+                maxConcurrency: serverSettings.maxConcurrency,
+                defaultSkipTests: serverSettings.defaultSkipTests,
+                enableDependencyBlocking: serverSettings.enableDependencyBlocking,
+                skipVerificationInAutoMode: serverSettings.skipVerificationInAutoMode,
+                useWorktrees: serverSettings.useWorktrees,
+                showProfilesOnly: serverSettings.showProfilesOnly,
+                defaultPlanningMode: serverSettings.defaultPlanningMode,
+                defaultRequirePlanApproval: serverSettings.defaultRequirePlanApproval,
+                defaultAIProfileId: serverSettings.defaultAIProfileId,
+                muteDoneSound: serverSettings.muteDoneSound,
+                enhancementModel: serverSettings.enhancementModel,
+                validationModel: serverSettings.validationModel,
+                phaseModels: serverSettings.phaseModels,
+                enabledCursorModels: serverSettings.enabledCursorModels,
+                cursorDefaultModel: serverSettings.cursorDefaultModel,
+                autoLoadClaudeMd: serverSettings.autoLoadClaudeMd ?? false,
+                keyboardShortcuts: {
+                  ...current.keyboardShortcuts,
+                  ...(serverSettings.keyboardShortcuts as unknown as Partial<
+                    typeof current.keyboardShortcuts
+                  >),
+                },
+                aiProfiles: serverSettings.aiProfiles,
+                mcpServers: serverSettings.mcpServers,
+                promptCustomization: serverSettings.promptCustomization ?? {},
+                projects: serverSettings.projects,
+                trashedProjects: serverSettings.trashedProjects,
+                projectHistory: serverSettings.projectHistory,
+                projectHistoryIndex: serverSettings.projectHistoryIndex,
+                lastSelectedSessionByProject: serverSettings.lastSelectedSessionByProject,
+              });
+
+              logger.info('Hydrated UI settings from server settings file');
+            } else {
+              logger.warn('Failed to load global settings from server:', global);
+            }
+          } catch (error) {
+            logger.error('Failed to hydrate UI settings from server:', error);
+          }
+
           setState({ checked: true, migrated: false, error: null });
           return;
         }
@@ -201,14 +258,28 @@ export function useSettingsMigration(): MigrationState {
 export async function syncSettingsToServer(): Promise<boolean> {
   try {
     const api = getHttpApiClient();
-    const automakerStorage = getItem('automaker-storage');
-
-    if (!automakerStorage) {
-      return false;
+    // IMPORTANT:
+    // Prefer the live Zustand state over localStorage to avoid race conditions
+    // (Zustand persistence writes can lag behind `set(...)`, which would cause us
+    // to sync stale values to the server).
+    //
+    // localStorage remains as a fallback for cases where the store isn't ready.
+    let state: Record<string, unknown> | null = null;
+    try {
+      state = useAppStore.getState() as unknown as Record<string, unknown>;
+    } catch {
+      // Ignore and fall back to localStorage
     }
 
-    const parsed = JSON.parse(automakerStorage);
-    const state = parsed.state || parsed;
+    if (!state) {
+      const automakerStorage = getItem('automaker-storage');
+      if (!automakerStorage) {
+        return false;
+      }
+
+      const parsed = JSON.parse(automakerStorage) as Record<string, unknown>;
+      state = (parsed.state as Record<string, unknown> | undefined) || parsed;
+    }
 
     // Extract settings to sync
     const updates = {
@@ -219,6 +290,7 @@ export async function syncSettingsToServer(): Promise<boolean> {
       maxConcurrency: state.maxConcurrency,
       defaultSkipTests: state.defaultSkipTests,
       enableDependencyBlocking: state.enableDependencyBlocking,
+      skipVerificationInAutoMode: state.skipVerificationInAutoMode,
       useWorktrees: state.useWorktrees,
       showProfilesOnly: state.showProfilesOnly,
       defaultPlanningMode: state.defaultPlanningMode,
@@ -229,8 +301,6 @@ export async function syncSettingsToServer(): Promise<boolean> {
       validationModel: state.validationModel,
       phaseModels: state.phaseModels,
       autoLoadClaudeMd: state.autoLoadClaudeMd,
-      enableSandboxMode: state.enableSandboxMode,
-      skipSandboxWarning: state.skipSandboxWarning,
       keyboardShortcuts: state.keyboardShortcuts,
       aiProfiles: state.aiProfiles,
       mcpServers: state.mcpServers,

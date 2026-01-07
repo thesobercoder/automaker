@@ -406,6 +406,8 @@ export interface GlobalSettings {
   defaultSkipTests: boolean;
   /** Default: enable dependency blocking */
   enableDependencyBlocking: boolean;
+  /** Skip verification requirement in auto-mode (treat 'completed' same as 'verified') */
+  skipVerificationInAutoMode: boolean;
   /** Default: use git worktrees for feature branches */
   useWorktrees: boolean;
   /** Default: only show AI profiles (hide other settings) */
@@ -474,10 +476,6 @@ export interface GlobalSettings {
   // Claude Agent SDK Settings
   /** Auto-load CLAUDE.md files using SDK's settingSources option */
   autoLoadClaudeMd?: boolean;
-  /** Enable sandbox mode for bash commands (default: false, enable for additional security) */
-  enableSandboxMode?: boolean;
-  /** Skip showing the sandbox risk warning dialog */
-  skipSandboxWarning?: boolean;
 
   // MCP Server Configuration
   /** List of configured MCP servers for agent use */
@@ -650,6 +648,7 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   maxConcurrency: 3,
   defaultSkipTests: true,
   enableDependencyBlocking: true,
+  skipVerificationInAutoMode: false,
   useWorktrees: false,
   showProfilesOnly: false,
   defaultPlanningMode: 'skip',
@@ -672,8 +671,6 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   worktreePanelCollapsed: false,
   lastSelectedSessionByProject: {},
   autoLoadClaudeMd: false,
-  enableSandboxMode: false,
-  skipSandboxWarning: false,
   mcpServers: [],
 };
 
