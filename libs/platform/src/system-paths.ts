@@ -1034,6 +1034,8 @@ export function getOpenCodeCliPaths(): string[] {
     const appData = process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming');
     const localAppData = process.env.LOCALAPPDATA || path.join(homeDir, 'AppData', 'Local');
     return [
+      // OpenCode's default installation directory
+      path.join(homeDir, '.opencode', 'bin', 'opencode.exe'),
       path.join(homeDir, '.local', 'bin', 'opencode.exe'),
       path.join(appData, 'npm', 'opencode.cmd'),
       path.join(appData, 'npm', 'opencode'),
@@ -1060,6 +1062,8 @@ export function getOpenCodeCliPaths(): string[] {
   const pnpmHome = process.env.PNPM_HOME || path.join(homeDir, '.local', 'share', 'pnpm');
 
   return [
+    // OpenCode's default installation directory
+    path.join(homeDir, '.opencode', 'bin', 'opencode'),
     // Standard locations
     path.join(homeDir, '.local', 'bin', 'opencode'),
     '/opt/homebrew/bin/opencode',

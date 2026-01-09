@@ -180,18 +180,21 @@ export class OpencodeProvider extends CliProvider {
       npxPackage: 'opencode-ai@latest',
       commonPaths: {
         linux: [
+          path.join(os.homedir(), '.opencode/bin/opencode'),
           path.join(os.homedir(), '.npm-global/bin/opencode'),
           '/usr/local/bin/opencode',
           '/usr/bin/opencode',
           path.join(os.homedir(), '.local/bin/opencode'),
         ],
         darwin: [
+          path.join(os.homedir(), '.opencode/bin/opencode'),
           path.join(os.homedir(), '.npm-global/bin/opencode'),
           '/usr/local/bin/opencode',
           '/opt/homebrew/bin/opencode',
           path.join(os.homedir(), '.local/bin/opencode'),
         ],
         win32: [
+          path.join(os.homedir(), '.opencode', 'bin', 'opencode.exe'),
           path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'opencode.cmd'),
           path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'opencode'),
           path.join(process.env.APPDATA || '', 'npm', 'opencode.cmd'),
