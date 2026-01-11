@@ -884,7 +884,10 @@ export interface WorktreeAPI {
   }>;
 
   // Open a worktree directory in the editor
-  openInEditor: (worktreePath: string) => Promise<{
+  openInEditor: (
+    worktreePath: string,
+    editorCommand?: string
+  ) => Promise<{
     success: boolean;
     result?: {
       message: string;
@@ -903,6 +906,30 @@ export interface WorktreeAPI {
     error?: string;
   }>;
 
+  // Get all available code editors
+  getAvailableEditors: () => Promise<{
+    success: boolean;
+    result?: {
+      editors: Array<{
+        name: string;
+        command: string;
+      }>;
+    };
+    error?: string;
+  }>;
+
+  // Refresh editor cache and re-detect available editors
+  refreshEditors: () => Promise<{
+    success: boolean;
+    result?: {
+      editors: Array<{
+        name: string;
+        command: string;
+      }>;
+      message: string;
+    };
+    error?: string;
+  }>;
   // Initialize git repository in a project
   initGit: (projectPath: string) => Promise<{
     success: boolean;

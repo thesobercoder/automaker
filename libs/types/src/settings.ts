@@ -460,6 +460,10 @@ export interface GlobalSettings {
   /** List of configured MCP servers for agent use */
   mcpServers: MCPServerConfig[];
 
+  // Editor Configuration
+  /** Default editor command for "Open In" action (null = auto-detect: Cursor > VS Code > first available) */
+  defaultEditorCommand: string | null;
+
   // Prompt Customization
   /** Custom prompts for Auto Mode, Agent Runner, Backlog Planning, and Enhancements */
   promptCustomization?: PromptCustomization;
@@ -712,6 +716,7 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   codexAdditionalDirs: DEFAULT_CODEX_ADDITIONAL_DIRS,
   codexThreadId: undefined,
   mcpServers: [],
+  defaultEditorCommand: null,
   enableSkills: true,
   skillsSources: ['user', 'project'],
   enableSubagents: true,

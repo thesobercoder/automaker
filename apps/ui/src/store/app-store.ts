@@ -580,6 +580,9 @@ export interface AppState {
   // MCP Servers
   mcpServers: MCPServerConfig[]; // List of configured MCP servers for agent use
 
+  // Editor Configuration
+  defaultEditorCommand: string | null; // Default editor for "Open In" action
+
   // Skills Configuration
   enableSkills: boolean; // Enable Skills functionality (loads from .claude/skills/ directories)
   skillsSources: Array<'user' | 'project'>; // Which directories to load Skills from
@@ -960,6 +963,9 @@ export interface AppActions {
   setAutoLoadClaudeMd: (enabled: boolean) => Promise<void>;
   setSkipSandboxWarning: (skip: boolean) => Promise<void>;
 
+  // Editor Configuration actions
+  setDefaultEditorCommand: (command: string | null) => void;
+
   // Prompt Customization actions
   setPromptCustomization: (customization: PromptCustomization) => Promise<void>;
 
@@ -1160,6 +1166,7 @@ const initialState: AppState = {
   autoLoadClaudeMd: false, // Default to disabled (user must opt-in)
   skipSandboxWarning: false, // Default to disabled (show sandbox warning dialog)
   mcpServers: [], // No MCP servers configured by default
+  defaultEditorCommand: null, // Auto-detect: Cursor > VS Code > first available
   enableSkills: true, // Skills enabled by default
   skillsSources: ['user', 'project'] as Array<'user' | 'project'>, // Load from both sources by default
   enableSubagents: true, // Subagents enabled by default
@@ -1949,6 +1956,9 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       set({ skipSandboxWarning: previous });
     }
   },
+
+  // Editor Configuration actions
+  setDefaultEditorCommand: (command) => set({ defaultEditorCommand: command }),
   // Prompt Customization actions
   setPromptCustomization: async (customization) => {
     set({ promptCustomization: customization });

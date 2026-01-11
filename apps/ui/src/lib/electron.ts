@@ -1645,13 +1645,34 @@ function createMockWorktreeAPI(): WorktreeAPI {
       };
     },
 
-    openInEditor: async (worktreePath: string) => {
-      console.log('[Mock] Opening in editor:', worktreePath);
+    openInEditor: async (worktreePath: string, editorCommand?: string) => {
+      const ANTIGRAVITY_EDITOR_COMMAND = 'antigravity';
+      const ANTIGRAVITY_LEGACY_COMMAND = 'agy';
+      // Map editor commands to display names
+      const editorNameMap: Record<string, string> = {
+        cursor: 'Cursor',
+        code: 'VS Code',
+        zed: 'Zed',
+        subl: 'Sublime Text',
+        windsurf: 'Windsurf',
+        trae: 'Trae',
+        rider: 'Rider',
+        webstorm: 'WebStorm',
+        xed: 'Xcode',
+        studio: 'Android Studio',
+        [ANTIGRAVITY_EDITOR_COMMAND]: 'Antigravity',
+        [ANTIGRAVITY_LEGACY_COMMAND]: 'Antigravity',
+        open: 'Finder',
+        explorer: 'Explorer',
+        'xdg-open': 'File Manager',
+      };
+      const editorName = editorCommand ? (editorNameMap[editorCommand] ?? 'Editor') : 'VS Code';
+      console.log('[Mock] Opening in editor:', worktreePath, 'using:', editorName);
       return {
         success: true,
         result: {
-          message: `Opened ${worktreePath} in VS Code`,
-          editorName: 'VS Code',
+          message: `Opened ${worktreePath} in ${editorName}`,
+          editorName,
         },
       };
     },
@@ -1663,6 +1684,32 @@ function createMockWorktreeAPI(): WorktreeAPI {
         result: {
           editorName: 'VS Code',
           editorCommand: 'code',
+        },
+      };
+    },
+
+    getAvailableEditors: async () => {
+      console.log('[Mock] Getting available editors');
+      return {
+        success: true,
+        result: {
+          editors: [
+            { name: 'VS Code', command: 'code' },
+            { name: 'Finder', command: 'open' },
+          ],
+        },
+      };
+    },
+    refreshEditors: async () => {
+      console.log('[Mock] Refreshing available editors');
+      return {
+        success: true,
+        result: {
+          editors: [
+            { name: 'VS Code', command: 'code' },
+            { name: 'Finder', command: 'open' },
+          ],
+          message: 'Found 2 available editors',
         },
       };
     },
